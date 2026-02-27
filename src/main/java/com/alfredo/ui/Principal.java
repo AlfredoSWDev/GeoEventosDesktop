@@ -1,14 +1,16 @@
 package com.alfredo.ui;
 
+import com.alfredo.data.BorrarEvento;
 import com.alfredo.data.Conector;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
-public class Principal {
-    public JPanel panel1;
+public class Principal extends DesplegarUI{
+    public JPanel panelPrincipal;
     private JTable tablaEventos;
     private JTextField barraBusqueda;
     private JButton modificarButton;
@@ -29,7 +31,7 @@ public class Principal {
         tablaEventos.setModel(modelo);
         Conector db = new Conector();
 
-        JFrame framePrincipal = desplegarUI(panel1, "Gestion de eventos");
+        JFrame framePrincipal = desplegarUI(panelPrincipal, "Gestion de eventos", JFrame.EXIT_ON_CLOSE);
 
         framePrincipal.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
@@ -52,13 +54,13 @@ public class Principal {
             }
         });
 
-        framePrincipal.setVisible(true);
+
 
         String actionKey = "Buscar";
 
-        panel1.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), actionKey);
+        panelPrincipal.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), actionKey);
 
-        panel1.getActionMap().put(actionKey, new AbstractAction() {
+        panelPrincipal.getActionMap().put(actionKey, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 accionBuscar(framePrincipal,db,barraBusqueda.getText());
@@ -71,45 +73,20 @@ public class Principal {
         });
 
         abrirButton.addActionListener(e -> {
-            int filaSeleccionada = tablaEventos.getSelectedRow();
-            if (filaSeleccionada != -1) {
-                Object idObj = tablaEventos.getValueAt(filaSeleccionada, 0);
-                String id = String.valueOf(idObj);
-
-                ManipularEventos ventanaModificar = new ManipularEventos("Evento:", id);
-                ventanaModificar.setId(id);
-            } else {
-                JOptionPane.showMessageDialog(framePrincipal, "Por favor, selecciona un evento de la tabla.");
-            }
+            desplegarVentanaEditar(framePrincipal, tablaEventos, "Evento:");
         });
 
         crearButton.addActionListener(e -> {
-            ManipularEventos ventana = new  ManipularEventos("Crear Evento");
-
+            new  ManipularEventos("Crear Evento");
         });
 
         modificarButton.addActionListener(e -> {
-
-
-            int filaSeleccionada = tablaEventos.getSelectedRow();
-            if (filaSeleccionada != -1) {
-                Object idObj = tablaEventos.getValueAt(filaSeleccionada, 0);
-                String id = String.valueOf(idObj);
-
-                ManipularEventos ventanaModificar = new ManipularEventos("Modificar Evento", id);
-                ventanaModificar.setId(id);
-
-            } else {
-                JOptionPane.showMessageDialog(framePrincipal, "Por favor, selecciona un evento de la tabla.");
-            }
-
+            desplegarVentanaEditar(framePrincipal, tablaEventos, "Modificar Evento");
         });
 
         borrarButton.addActionListener(e -> {
-            // 1. Obtenemos el índice de la fila seleccionada
             int filaSeleccionada = tablaEventos.getSelectedRow();
 
-            // 2. Verificamos que haya una selección válida (diferente de -1)
             if (filaSeleccionada != -1) {
 
                 Object idObj = tablaEventos.getValueAt(filaSeleccionada, 0);
@@ -119,7 +96,7 @@ public class Principal {
                 if (confirmacionBorrar == JOptionPane.YES_OPTION) {
                     System.out.println("ID seleccionado para operar: " + id);
 
-                    db.borrarEvento(id);
+                    new BorrarEvento(id);
                     db.cargarDatosTabla(modelo);
                 }
             } else {
@@ -136,14 +113,18 @@ public class Principal {
         }
     }
 
+    public void desplegarVentanaEditar(JFrame framePadre,JTable tabla, String operador) {
+        int filaSeleccionada = tabla.getSelectedRow();
+        if (filaSeleccionada != -1) {
+            Object idObj = tabla.getValueAt(filaSeleccionada, 0);
+            String id = String.valueOf(idObj);
 
-    public JFrame desplegarUI(JPanel panel, String titulo) {
-        JFrame frame = new JFrame(titulo);
-        frame.setContentPane(panel);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        return frame;
+            ManipularEventos ventanaModificar = new ManipularEventos(operador, id);
+            ventanaModificar.setId(id);
+
+        } else {
+            JOptionPane.showMessageDialog(framePadre, "Por favor, selecciona un evento de la tabla.");
+        }
     }
 
 
