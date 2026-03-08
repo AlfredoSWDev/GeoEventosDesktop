@@ -27,6 +27,10 @@ El proyecto inicia con un **MVP CRUD** que permite a los clientes gestionar sus 
 | Jackson | Parseo de respuestas JSON |
 | FlatLaf | Look & Feel moderno para Swing |
 | IntelliJ IDEA | IDE (usa `.form` para diseño UI) |
+| JUnit 5 | Framework de testing |
+| Mockito | Mocks para unit tests |
+| WireMock | Servidor HTTP falso para integration tests |
+| AssertJ | Assertions fluidas |
 
 ---
 
@@ -79,6 +83,18 @@ src/main/java/com/alfredo/
 src/main/resources/
     ├── config.properties            # Configuración de la app
     └── mapa.html                    # HTML con Leaflet para el mapa embebido
+
+src/test/java/com/alfredo/
+├── model/
+│   └── ImagenesTest.java            # Unit tests — deserialización JSON
+├── data/
+│   ├── ConectorTest.java            # Unit tests — carga y búsqueda en tabla
+│   └── LeerEventoTest.java          # Unit tests — lectura de evento por ID
+└── api/
+    └── ApiClientIntegrationTest.java # Integration tests — GET/POST/PUT/DELETE
+
+src/test/resources/
+    └── config.properties            # Apunta a WireMock (localhost:8089)
 ```
 
 ---
@@ -135,6 +151,34 @@ imgbb.api.url=https://api.imgbb.com/1/upload
 
 ---
 
+## Testing
+
+Los tests no requieren que GeoEventosAPI esté corriendo — usan WireMock para simular el servidor.
+
+```bash
+mvn test
+```
+
+En entornos sin pantalla (servidores, CI/CD), instala Xvfb primero:
+
+```bash
+# Fedora / RHEL
+sudo dnf install xorg-x11-server-Xvfb
+
+# Ubuntu / Debian
+sudo apt install xvfb
+```
+
+```bash
+Xvfb :99 &
+export DISPLAY=:99
+mvn test
+```
+
+Resultado esperado: **27 tests, 0 failures**.
+
+---
+
 ## Flujos Principales
 
 ### Carga de datos
@@ -185,6 +229,7 @@ Botón Borrar
 - [x] Visualización geolocalizada de eventos
 - [x] Click en marcador para ver detalle
 - [x] Click en mapa para asignar coordenadas
+- [x] Unit tests e integration tests (JUnit 5 + Mockito + WireMock)
 - [ ] Filtros avanzados por categoría, fecha y distancia
 - [ ] Panel de estadísticas para clientes B2B
 - [ ] Despliegue en AWS
