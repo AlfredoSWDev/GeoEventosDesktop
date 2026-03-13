@@ -139,7 +139,9 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           NUMERIC=$(echo "$TAG" | sed 's/^v//' | sed 's/-.*$//' \
             | sed 's/IX/9/g; s/VIII/8/g; s/VII/7/g; s/VI/6/g; s/V/5/g; s/IV/4/g; s/III/3/g; s/II/2/g; s/\.I\./\.1\./g')
-          echo "numeric=$NUMERIC" >> $GITHUB_OUTPUT
+          # Windows Installer exige que el major sea <= 255, recortamos a 2 dígitos (2026 → 26)
+          WIN=$(echo "$NUMERIC" | sed 's/^\([0-9]\{2\}\)\([0-9]\{2\}\)\./\2./')
+          echo "numeric=$WIN" >> $GITHUB_OUTPUT
 
       - name: Build with Maven
         run: mvn clean package -DskipTests
