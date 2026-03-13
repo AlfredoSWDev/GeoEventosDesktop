@@ -2,8 +2,14 @@ name: Build Installers
 
 on:
   push:
-    branches: [ main ]
+    tags:
+      - 'v[0-9]*.*.*-alfa'
+      - 'v[0-9]*.*.*-beta'
+      - 'v[0-9]*.*.*-stable'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
 
@@ -23,6 +29,17 @@ jobs:
       - name: Install rpm-build
         run: sudo apt-get install -y rpm
 
+      - name: Extract numeric version for jpackage
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Convierte v2026.III.13-stable → 2026.3.13
+          NUMERIC=$(echo "$TAG" | sed 's/^v//' | sed 's/-.*$//' \
+            | sed 's/I\{4\}/4/g; s/I\{3\}/3/g; s/I\{2\}/2/g' \
+            | sed 's/IX/9/g; s/VIII/8/g; s/VII/7/g; s/VI/6/g; s/V/5/g; s/IV/4/g; s/III/3/g; s/II/2/g; s/^I$/1/g; s/\.I\./\.1\./g')
+          echo "numeric=$NUMERIC" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
@@ -34,7 +51,7 @@ jobs:
           jpackage \
             --type rpm \
             --name "GeoEventosDesktop" \
-            --app-version "1.0" \
+            --app-version "${{ steps.version.outputs.numeric }}" \
             --vendor "Alfredo" \
             --description "GeoEventos Desktop - Gestión de eventos con geolocalización" \
             --input target/jpackage-input \
@@ -46,7 +63,7 @@ jobs:
             --java-options "--add-opens java.base/java.util=ALL-UNNAMED" \
             --java-options "-XX:+EnableDynamicAgentLoading"
 
-      - name: Upload RPM
+      - name: Upload RPM artifact
         uses: actions/upload-artifact@v4
         with:
           name: installer-rpm
@@ -65,6 +82,14 @@ jobs:
           java-version: '23'
           distribution: 'temurin'
 
+      - name: Extract numeric version for jpackage
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          NUMERIC=$(echo "$TAG" | sed 's/^v//' | sed 's/-.*$//' \
+            | sed 's/IX/9/g; s/VIII/8/g; s/VII/7/g; s/VI/6/g; s/V/5/g; s/IV/4/g; s/III/3/g; s/II/2/g; s/\.I\./\.1\./g')
+          echo "numeric=$NUMERIC" >> $GITHUB_OUTPUT
+
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
@@ -76,7 +101,7 @@ jobs:
           jpackage \
             --type deb \
             --name "GeoEventosDesktop" \
-            --app-version "1.0" \
+            --app-version "${{ steps.version.outputs.numeric }}" \
             --vendor "Alfredo" \
             --description "GeoEventos Desktop - Gestión de eventos con geolocalización" \
             --input target/jpackage-input \
@@ -88,7 +113,7 @@ jobs:
             --java-options "--add-opens java.base/java.util=ALL-UNNAMED" \
             --java-options "-XX:+EnableDynamicAgentLoading"
 
-      - name: Upload DEB
+      - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
         with:
           name: installer-deb
@@ -107,6 +132,15 @@ jobs:
           java-version: '23'
           distribution: 'temurin'
 
+      - name: Extract numeric version for jpackage
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          NUMERIC=$(echo "$TAG" | sed 's/^v//' | sed 's/-.*$//' \
+            | sed 's/IX/9/g; s/VIII/8/g; s/VII/7/g; s/VI/6/g; s/V/5/g; s/IV/4/g; s/III/3/g; s/II/2/g; s/\.I\./\.1\./g')
+          echo "numeric=$NUMERIC" >> $GITHUB_OUTPUT
+
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
@@ -119,7 +153,7 @@ jobs:
           jpackage `
             --type exe `
             --name "GeoEventosDesktop" `
-            --app-version "1.0" `
+            --app-version "${{ steps.version.outputs.numeric }}" `
             --vendor "Alfredo" `
             --description "GeoEventos Desktop - Gestión de eventos con geolocalización" `
             --input target\jpackage-input `
@@ -134,7 +168,7 @@ jobs:
             --win-shortcut
         shell: pwsh
 
-      - name: Upload EXE
+      - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
           name: installer-windows
@@ -153,6 +187,14 @@ jobs:
           java-version: '23'
           distribution: 'temurin'
 
+      - name: Extract numeric version for jpackage
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          NUMERIC=$(echo "$TAG" | sed 's/^v//' | sed 's/-.*$//' \
+            | sed 's/IX/9/g; s/VIII/8/g; s/VII/7/g; s/VI/6/g; s/V/5/g; s/IV/4/g; s/III/3/g; s/II/2/g; s/\.I\./\.1\./g')
+          echo "numeric=$NUMERIC" >> $GITHUB_OUTPUT
+
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
@@ -164,7 +206,7 @@ jobs:
           jpackage \
             --type pkg \
             --name "GeoEventosDesktop" \
-            --app-version "1.0" \
+            --app-version "${{ steps.version.outputs.numeric }}" \
             --vendor "Alfredo" \
             --description "GeoEventos Desktop - Gestión de eventos con geolocalización" \
             --input target/jpackage-input \
@@ -176,8 +218,56 @@ jobs:
             --java-options "--add-opens java.base/java.util=ALL-UNNAMED" \
             --java-options "-XX:+EnableDynamicAgentLoading"
 
-      - name: Upload PKG
+      - name: Upload PKG artifact
         uses: actions/upload-artifact@v4
         with:
           name: installer-macos
           path: target/installer/*.pkg
+
+  # ── Crear GitHub Release con los 4 instaladores ───────────────────────────
+  release:
+    name: Create Release
+    needs: [build-rpm, build-deb, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: installers
+
+      - name: Set prerelease flag
+        id: flags
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == *"-stable" ]]; then
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "GeoEventos Desktop ${{ github.ref_name }}"
+          prerelease: ${{ steps.flags.outputs.prerelease == 'true' }}
+          body: |
+            ## GeoEventos Desktop ${{ github.ref_name }}
+
+            ### Descargas
+            | Plataforma | Archivo |
+            |------------|---------|
+            | 🐧 Fedora / RHEL | `.rpm` |
+            | 🐧 Ubuntu / Debian | `.deb` |
+            | 🪟 Windows | `.exe` |
+            | 🍎 macOS | `.pkg` |
+
+            ### Instalación
+            - **Fedora/RHEL:** `sudo dnf install geoeventosdesktop-*.rpm`
+            - **Ubuntu/Debian:** `sudo apt install ./geoeventosdesktop_*.deb`
+            - **Windows:** ejecuta el `.exe` como administrador
+            - **macOS:** abre el `.pkg` y sigue el asistente
+          files: |
+            installers/installer-rpm/*.rpm
+            installers/installer-deb/*.deb
+            installers/installer-windows/*.exe
+            installers/installer-macos/*.pkg
