@@ -10,7 +10,7 @@ import java.net.http.HttpResponse;
 public class ApiClient {
 
     // Lee la URL base desde config.properties
-    private static final String BASE_URL = AppConfig.get("api.base.url");
+    private static final String BASE_URL = AppConfig.get("API_BASE_URL");
     private static final HttpClient client = HttpClient.newHttpClient();
 
     // ── GET ─────────────────────────────────────────────────────────────────
